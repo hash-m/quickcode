@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'screens/home_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -12,25 +13,9 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'QuickCode',
       theme: ThemeData(
-        colorScheme: .fromSeed(seedColor: Colors.black),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.black),
       ),
       home: const HomePage(),
     );
   }
-}
-
-class HomePage extends StatefulWidget {
-  const HomePage({super.key});
-
-  @override
-  State<HomePage> createState() => _HomePageState();
-}
-
-class _HomePageState extends State<HomePage> {
-    @override
-    Widget build(BuildContext context) {
-        return Scaffold(
-            
-        );
-    }
 }
