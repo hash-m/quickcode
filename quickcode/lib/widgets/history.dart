@@ -15,10 +15,12 @@ class CodeEntry {
 
 class HistoryList extends StatelessWidget {
   final List<CodeEntry> history;
+  final void Function(CodeEntry entry) onSelect;
 
   const HistoryList({
     super.key,
     required this.history,
+    required this.onSelect
   });
 
   @override
@@ -29,13 +31,12 @@ class HistoryList extends StatelessWidget {
         final entry = history[index];
 
         return ListTile(
-          leading: Icon(
-            entry.isQrCode
-                ? Icons.qr_code
-                : Icons.view_stream,
-          ),
+          leading: Icon(entry.isQrCode ? Icons.qr_code : Icons.view_stream),
           title: Text(entry.barcodeData),
           subtitle: Text(entry.timestamp.toString()),
+          onTap: () {
+            onSelect(entry);
+          } ,
         );
       },
     );

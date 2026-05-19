@@ -29,7 +29,6 @@ class _HomePageState extends State<HomePage> {
   void dispose() {
     _controller.dispose();
     super.dispose();
-    
   }
 
   Future<void> handleSubmit() async {
@@ -53,16 +52,43 @@ class _HomePageState extends State<HomePage> {
       ..timestamp = DateTime.now(),
     );
     
-  await loadHistory();
-}
+    await loadHistory();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+
+
     return Scaffold(
       appBar: AppBar(
         title: const Text("QuickCode"),
       ),
-      body: Row(
+      body: width < 600 ? smallScreenUI() : bigScreenUI()
+    );
+  }
+  
+
+  Future<void> loadHistory() async {
+  final data = await IsarService.getTop10History();
+
+  setState(() {
+    history = data;
+  });
+  }
+
+  void onHistorySelected(CodeEntry entry) {
+    setState(() {
+      barcodeData = entry.barcodeData;
+      isQrCode = entry.isQrCode;
+      errorMessage = null;
+
+      _controller.text = entry.barcodeData;
+    });
+  }
+
+  Widget bigScreenUI(){
+    return Row(
         children: [
           Expanded(
             flex: 2,
@@ -93,19 +119,56 @@ class _HomePageState extends State<HomePage> {
 
           Expanded(
             flex: 1,
-            child: HistoryList(history: history),
+            child: HistoryList(history: history,onSelect: onHistorySelected),
           ),
         ],
-      )
-    );
+      );
   }
 
-  Future<void> loadHistory() async {
-  final data = await IsarService.getTop10History();
+  Widget smallScreenUI() {
+    return Column(
+      children: [
+        InputField(controller: _controller),
 
-  setState(() {
-    history = data;
-  });
-}
+        CodeToggler(
+          value: isQrCode,
+          onChanged: (bool value) {
+            setState(() {
+              isQrCode = value;
+            });
+          },
+        ),
+
+        SubmitButton(onPressed: handleSubmit),
+
+        if (barcodeData != null)
+          BarcodeContainer(
+            errorMessage: errorMessage,
+            isQrCode: isQrCode,
+            data: barcodeData ?? "",
+          ),
+        
+        IconButton(
+          icon: const Icon(Icons.history),
+          onPressed: () {
+            showModalBottomSheet(
+            context: context,
+            builder: (context) {
+              return SizedBox(
+                height: 400,
+                child: HistoryList(
+                  history: history,
+                  onSelect : (entry) {
+                    onHistorySelected(entry);
+                    Navigator.pop(context);
+                  } 
+                ),
+              );
+            },
+          );}
+        )
+      ],
+    );
+  }
 }
 
