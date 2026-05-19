@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:quickcode/widgets/input.dart';
-import 'package:barcode_widget/barcode_widget.dart';
+import 'package:quickcode/widgets/output.dart';
+import 'package:quickcode/widgets/history.dart';
+import 'package:quickcode/isar_service.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -13,21 +15,46 @@ class _HomePageState extends State<HomePage> {
   final TextEditingController _controller = TextEditingController();
 
   bool isQrCode = false;
+  String? errorMessage;
   String? barcodeData;
+  List<CodeEntry> history = [];
+
+  @override
+  void initState() {
+    super.initState();
+    loadHistory();
+  }
 
   @override
   void dispose() {
     _controller.dispose();
     super.dispose();
+    
   }
 
-  void handleSubmit() {
-    if (_controller.text.isNotEmpty) {
-      setState(() {
-        barcodeData = _controller.text;
-      });
+  Future<void> handleSubmit() async {
+  final text = _controller.text;
+
+  setState(() {
+    if (text.isEmpty) {
+      errorMessage = "Please enter some text";
+      barcodeData = "";
+      return;
     }
-  }
+
+    barcodeData = text;
+    errorMessage = null;
+  });
+
+  await IsarService.addCodeEntryAndTrim(
+    CodeEntry()
+      ..barcodeData = barcodeData!
+      ..isQrCode = isQrCode
+      ..timestamp = DateTime.now(),
+    );
+    
+  await loadHistory();
+}
 
   @override
   Widget build(BuildContext context) {
@@ -35,32 +62,50 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         title: const Text("QuickCode"),
       ),
-      body: Column(
+      body: Row(
         children: [
-          InputField(controller: _controller),
+          Expanded(
+            flex: 2,
+            child: Column(
+              children: [
+                InputField(controller: _controller),
 
-          CodeToggler(
-            value: isQrCode,
-            onChanged: (bool value) {
-              setState(() {
-                isQrCode = value;
-              });
-            },
+                CodeToggler(
+                  value: isQrCode,
+                  onChanged: (bool value) {
+                    setState(() {
+                      isQrCode = value;
+                    });
+                  },
+                ),
+
+                SubmitButton(onPressed: handleSubmit),
+
+                if (barcodeData != null)
+                  BarcodeContainer(
+                    errorMessage: errorMessage,
+                    isQrCode: isQrCode,
+                    data: barcodeData ?? "",
+                  ),
+              ],
+            ),
           ),
 
-          SubmitButton(onPressed: handleSubmit),
-
-          if (barcodeData != null)
-            BarcodeWidget(
-              barcode: isQrCode
-                  ? Barcode.qrCode()
-                  : Barcode.code128(),
-              data: barcodeData!,
-              width: 500,
-              height: 500,
-            ),
+          Expanded(
+            flex: 1,
+            child: HistoryList(history: history),
+          ),
         ],
-      ),
+      )
     );
   }
+
+  Future<void> loadHistory() async {
+  final data = await IsarService.getTop10History();
+
+  setState(() {
+    history = data;
+  });
 }
+}
+
