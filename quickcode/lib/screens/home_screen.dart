@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:quickcode/widgets/input.dart';
-import 'package:quickcode/widgets/output.dart';
+import 'small_screen.dart';
+import 'big_screen.dart';
 import 'package:quickcode/widgets/history.dart';
 import 'package:quickcode/isar_service.dart';
 
@@ -11,7 +11,23 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
+class HomeController {
+  final TextEditingController textController;
+
+  final VoidCallback onSubmit;
+  final ValueChanged<bool> onToggle;
+  final ValueChanged<CodeEntry> onHistorySelected;
+
+  HomeController({
+    required this.textController,
+    required this.onSubmit,
+    required this.onToggle,
+    required this.onHistorySelected,
+  });
+}
+
 class _HomePageState extends State<HomePage> {
+  late HomeController homeController;
   final TextEditingController _controller = TextEditingController();
 
   bool isQrCode = false;
@@ -23,6 +39,13 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     loadHistory();
+
+    homeController = HomeController(
+      textController: _controller,
+      onSubmit: handleSubmit,
+      onToggle: onToggle, 
+      onHistorySelected: onHistorySelected
+    );
   }
 
   @override
@@ -32,27 +55,37 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> handleSubmit() async {
-  final text = _controller.text;
+    final text = _controller.text;
 
-  setState(() {
-    if (text.isEmpty) {
-      errorMessage = "Please enter some text";
-      barcodeData = "";
-      return;
-    }
+    setState(() {
+      if (text.isEmpty) {
+        errorMessage = "Please enter some text";
+        barcodeData = "";
+        return;
+      } else {
+        print(text);
+      }
 
-    barcodeData = text;
-    errorMessage = null;
-  });
+      barcodeData = text;
+      errorMessage = null;
+    });
 
-  await IsarService.addCodeEntryAndTrim(
-    CodeEntry()
-      ..barcodeData = barcodeData!
-      ..isQrCode = isQrCode
-      ..timestamp = DateTime.now(),
-    );
-    
-    await loadHistory();
+    if (text.isEmpty) return;
+
+    await IsarService.addCodeEntryAndTrim(
+      CodeEntry()
+        ..barcodeData = barcodeData!
+        ..isQrCode = isQrCode
+        ..timestamp = DateTime.now(),
+      );
+      
+      await loadHistory();
+  }
+
+  void onToggle(bool value){
+    setState(() {
+      isQrCode = value;
+    });
   }
 
   @override
@@ -64,7 +97,22 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         title: const Text("QuickCode"),
       ),
-      body: width < 600 ? smallScreenUI() : bigScreenUI()
+      body: width < 600 ? 
+        SmallScreenUI(
+          homeController: homeController, 
+          isQrCode: isQrCode,
+          barcodeData: barcodeData,
+          history: history,
+          errorMessage: errorMessage
+          )
+        : 
+        BigScreenUI(
+          homeController : homeController,
+          isQrCode: isQrCode,
+          barcodeData: barcodeData,
+          history: history,
+          errorMessage: errorMessage
+        )
     );
   }
   
@@ -85,90 +133,6 @@ class _HomePageState extends State<HomePage> {
 
       _controller.text = entry.barcodeData;
     });
-  }
-
-  Widget bigScreenUI(){
-    return Row(
-        children: [
-          Expanded(
-            flex: 2,
-            child: Column(
-              children: [
-                InputField(controller: _controller),
-
-                CodeToggler(
-                  value: isQrCode,
-                  onChanged: (bool value) {
-                    setState(() {
-                      isQrCode = value;
-                    });
-                  },
-                ),
-
-                SubmitButton(onPressed: handleSubmit),
-
-                if (barcodeData != null)
-                  BarcodeContainer(
-                    errorMessage: errorMessage,
-                    isQrCode: isQrCode,
-                    data: barcodeData ?? "",
-                  ),
-              ],
-            ),
-          ),
-
-          Expanded(
-            flex: 1,
-            child: HistoryList(history: history,onSelect: onHistorySelected),
-          ),
-        ],
-      );
-  }
-
-  Widget smallScreenUI() {
-    return Column(
-      children: [
-        InputField(controller: _controller),
-
-        CodeToggler(
-          value: isQrCode,
-          onChanged: (bool value) {
-            setState(() {
-              isQrCode = value;
-            });
-          },
-        ),
-
-        SubmitButton(onPressed: handleSubmit),
-
-        if (barcodeData != null)
-          BarcodeContainer(
-            errorMessage: errorMessage,
-            isQrCode: isQrCode,
-            data: barcodeData ?? "",
-          ),
-        
-        IconButton(
-          icon: const Icon(Icons.history),
-          onPressed: () {
-            showModalBottomSheet(
-            context: context,
-            builder: (context) {
-              return SizedBox(
-                height: 400,
-                child: HistoryList(
-                  history: history,
-                  onSelect : (entry) {
-                    onHistorySelected(entry);
-                    Navigator.pop(context);
-                  } 
-                ),
-              );
-            },
-          );}
-        )
-      ],
-    );
   }
 }
 

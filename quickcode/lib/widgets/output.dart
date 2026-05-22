@@ -31,7 +31,7 @@ class BarcodeContainer extends StatelessWidget {
       child: Center(
         child: hasError || data.isEmpty
             ? Text(
-                errorMessage!,
+                data.isEmpty ? "No barcode data available" : errorMessage!,
                 style: const TextStyle(
                   color: Colors.red,
                   fontWeight: FontWeight.w500,

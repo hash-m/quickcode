@@ -31,10 +31,31 @@ class CodeToggler extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Switch(
-      value: value,
-      activeThumbColor: Colors.red,
-      onChanged: onChanged,
+    return SegmentedButton<bool>(
+      segments: const [
+        ButtonSegment<bool>(
+          value: false,
+          label: Text("Barcode"),
+        ),
+        ButtonSegment<bool>(
+          value: true,
+          label: Text("QR Code"),
+        ),
+      ],
+
+      style: ButtonStyle(
+        shape: WidgetStatePropertyAll(
+          RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(4), // low = blocky
+          ),
+        ),
+      ),
+
+      selected: {value},
+
+      onSelectionChanged: (Set<bool> selection) {
+        onChanged(selection.first);
+      },
     );
   }
 }
