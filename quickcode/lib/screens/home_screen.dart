@@ -62,8 +62,6 @@ class _HomePageState extends State<HomePage> {
         errorMessage = "Please enter some text";
         barcodeData = "";
         return;
-      } else {
-        print(text);
       }
 
       barcodeData = text;
